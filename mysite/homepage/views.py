@@ -462,4 +462,77 @@ def inbox_view(request):
     elif request.method == 'GET':
         return render(request, 'homepage/inbox.html')
     
+
+def sent_view(request):
+    global i, addr, passwrd, conn
+    if request.method == 'POST':
+        imap_url = 'imap.gmail.com'
+        conn = imaplib.IMAP4_SSL(imap_url)
+        addr = 'majorprojectit2024@gmail.com'
+        passwrd = 'hiep aodb itic nltd'
+        conn.login(addr, passwrd)
+        conn.select('"[Gmail]/Sent Mail"')
+        result1, data1 = conn.search(None, "ALL")
+        mail_list = data1[0].split()
+        text = "You have reached your sent mails folder. You have " + str(len(mail_list)) + " mails in your sent mails folder. To search a specific email say search. To go back to the menu page say back. To logout say logout."
+        texttospeech(text, file + i)
+        i = i + str(1)
+        flag = True
+        while (flag):
+            act = speechtotext(5)
+            act = act.lower()
+            print(act)
+            if act == 'search':
+                flag = False
+                emailid = ""
+                while True:
+                    texttospeech("Enter email ID of receiver.", file + i)
+                    i = i + str(1)
+                    emailid = speechtotext(20)
+                    
+                    texttospeech("You meant " + emailid + " say correct to confirm or no to enter again", file + i)
+                    i = i + str(1)
+                    yn = speechtotext(5)
+                    yn = yn.lower()
+                    if yn == 'correct':
+                        break
+                emailid = emailid.strip()
+                emailid = emailid.replace(' ', '')
+                emailid = emailid.lower()
+                emailid = convert_special_char(emailid)
+                search_specific_mail('"[Gmail]/Sent Mail"', 'TO', emailid,'sent')
+
+            elif act == 'back':
+                texttospeech("You will now be redirected to the menu page.", file + i)
+                i = i + str(1)
+                conn.logout()
+                return JsonResponse({'result': 'success'})
+
+            elif act == 'logout':
+                addr = ""
+                passwrd = ""
+                texttospeech("You have been logged out of your account and now will be redirected back to the login page.", file + i)
+                i = i + str(1)
+                return JsonResponse({'result': 'logout'})
+
+            else:
+                texttospeech("Invalid action. Please try again.", file + i)
+                i = i + str(1)
+
+            texttospeech("If you wish to do anything else in the sent mails folder say stay or else say no.", file + i)
+            i = i + str(1)
+            ans = speechtotext(3)
+            ans = ans.lower()
+            if ans == 'stay':
+                flag = True
+                texttospeech("Enter your desired action. Say search, back or logout. ", file + i)
+                i = i + str(1)
+        texttospeech("You will now be redirected to the menu page.", file + i)
+        i = i + str(1)
+        conn.logout()
+        return JsonResponse({'result': 'success'})
+
+    elif request.method == 'GET':
+        return render(request, 'homepage/sent.html')
+    
    
