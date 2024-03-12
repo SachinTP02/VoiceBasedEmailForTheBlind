@@ -97,6 +97,42 @@ def convert_special_char(text):
                     temp=temp.replace('dash','-')
     return temp
 
+def read_mails(mail_list,folder):
+    global s, i
+    mail_list.reverse()
+    mail_count = 0
+    to_read_list = list()
+    for item in mail_list:
+        result, email_data = conn.fetch(item, '(RFC822)')
+        raw_email = email_data[0][1].decode()
+        message = email.message_from_string(raw_email)
+        To = message['To']
+        From = message['From']
+        Subject = message['Subject']
+        Msg_id = message['Message-ID']
+        texttospeech("Email number " + str(mail_count + 1) + "    .The mail is from " + From + " to " + To + "  . The subject of the mail is " + Subject, file + i)
+        i = i + str(1)
+        print('message id= ', Msg_id)
+        print('From :', From)
+        print('To :', To)
+        print('Subject :', Subject)
+        print("\n")
+        to_read_list.append(Msg_id)
+        mail_count = mail_count + 1
+
+def search_specific_mail(folder,key,value,foldername):
+    global i, conn
+    conn.select(folder)
+    result, data = conn.search(None,key,'"{}"'.format(value))
+    mail_list=data[0].split()
+    if len(mail_list) != 0:
+        texttospeech("There are " + str(len(mail_list)) + " emails with this email ID.", file + i)
+        i = i + str(1)
+    if len(mail_list) == 0:
+        texttospeech("There are no emails with this email ID.", file + i)
+        i = i + str(1)
+    else:
+        read_mails(mail_list,foldername)
 
 
 def login_view(request):
@@ -304,4 +340,81 @@ def compose_view(request):
     compose.body = body
 
     return render(request, 'homepage/compose.html', {'compose' : compose})
+
+
+def inbox_view(request):
+    global i, addr, passwrd, conn
+    if request.method == 'POST':
+        imap_url = 'imap.gmail.com'
+        addr = 'majorprojectit2024@gmail.com'
+        passwd = 'hiep aodb itic nltd'
+        conn = imaplib.IMAP4_SSL(imap_url)
+        conn.login(addr, passwrd)
+        conn.select('"INBOX"')
+        result, data = conn.search(None, '(UNSEEN)')
+        unread_list = data[0].split()
+        no = len(unread_list)
+        result1, data1 = conn.search(None, "ALL")
+        mail_list = data1[0].split()
+        text = "You have reached your inbox. There are " + str(len(mail_list)) + " total mails in your inbox. You have " + str(no) + " unread emails" + ". To read unread emails say unread. To search a specific email say search. To go back to the menu page say back. To logout say logout."
+        texttospeech(text, file + i)
+        i = i + str(1)
+        flag = True
+        while(flag):
+            act = speechtotext(5)
+            act = act.lower()
+            print(act)
+            if act == 'unread':
+                flag = False
+                if no!=0:
+                    read_mails(unread_list,'inbox')
+                else:
+                    texttospeech("You have no unread emails.", file + i)
+                    i = i + str(1)
+            elif act == 'search':
+                flag = False
+                emailid = ""
+                while True:
+                    texttospeech("Enter email ID of the person who's email you want to search.", file + i)
+                    i = i + str(1)
+                    emailid = speechtotext(15)
+                    print(emailid)
+                    texttospeech("You meant " + emailid + " say correct to confirm or no to enter again", file + i)
+                    i = i + str(1)
+                    yn = speechtotext(5)
+                    yn = yn.lower()
+                    print(yn)
+                    if yn == 'correct':
+                        break
+                emailid = emailid.strip()
+                emailid = emailid.replace(' ', '')
+                emailid = emailid.lower()
+                emailid = convert_special_char(emailid)
+                search_specific_mail('INBOX', 'FROM', emailid,'inbox')
+
+            elif act == 'back':
+                texttospeech("You will now be redirected to the menu page.", file + i)
+                i = i + str(1)
+                conn.logout()
+                return JsonResponse({'result': 'success'})
+
+            elif act == 'log out' or act == 'logout':
+                addr = ""
+                passwrd = ""
+                texttospeech("You have been logged out of your account and now will be redirected back to the login page.", file + i)
+                i = i + str(1)
+                return JsonResponse({'result': 'logout'})
+
+            else:
+                texttospeech("Invalid action. Please try again.", file + i)
+                i = i + str(1)
+
+        texttospeech("You will now be redirected to the menu page.", file + i)
+        i = i + str(1)
+        conn.logout()
+        return JsonResponse({'result': 'success'})
+
+    elif request.method == 'GET':
+        return render(request, 'homepage/inbox.html')
+    
    
