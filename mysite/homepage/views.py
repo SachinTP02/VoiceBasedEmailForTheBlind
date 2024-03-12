@@ -99,6 +99,32 @@ def convert_special_char(text):
 
 
 
+def login_view(request):
+    global i, addr, passwrd 
+
+    if request.method == 'POST':
+        imap_url = 'imap.gmail.com'
+        passwrd = 'hiep aodb itic nltd'
+        addr = 'majorprojectit2024@gmail.com'
+        conn = imaplib.IMAP4_SSL(imap_url)
+        try:
+            conn.login(addr, passwrd)
+            s.login(addr, passwrd)
+            texttospeech("I have logged you in successfully. You will now be redirected to the menu page.", file + i)
+            i = i + str(1)
+            return JsonResponse({'result' : 'success'})
+        except:
+            texttospeech("Invalid Login Details. Please try again.", file + i)
+            i = i + str(1)
+            return JsonResponse({'result': 'failure'})
+
+    
+    detail  = Details()
+    detail.email = addr
+    detail.password = passwrd
+    return render(request, 'homepage/login.html', {'detail' : detail}) 
+
+
 
 
 def compose_view(request):
