@@ -535,4 +535,79 @@ def sent_view(request):
     elif request.method == 'GET':
         return render(request, 'homepage/sent.html')
     
+
+def trash_view(request):
+    global i, addr, passwrd, conn
+    if request.method == 'POST':
+        addr = 'majorprojectit2024@gmail.com'
+        passwrd = 'hiep aodb itic nltd'        
+        imap_url = 'imap.gmail.com'
+        conn = imaplib.IMAP4_SSL(imap_url)
+        conn.login(addr, passwrd)
+        conn.select('"[Gmail]/Trash"')
+        result1, data1 = conn.search(None, "ALL")
+        mail_list = len(data1[0].split())
+        text = "You have reached your trash folder. You have " + str(mail_list) + " mails in your trash folder. To search a specific email say search. To go back to the menu page say back. To logout say logout."
+        texttospeech(text, file + i)
+        i = i + str(1)
+        flag = True
+        while (flag):
+            act = speechtotext(5)
+            act = act.lower()
+            print(act)
+            if act == 'search'  or act == 'serch' or act == 'ser' or act == 'se' or act == 'sarch' or act == 'seach' or act == 'sach' or act == 'sech':
+                flag = False
+                emailid = ""
+                while True:
+                    texttospeech("Enter email ID of sender.", file + i)
+                    i = i + str(1)
+                    emailid = speechtotext(15)
+                    texttospeech("You meant " + emailid + " say correct to confirm or no to enter again", file + i)
+                    i = i + str(1)
+                    yn = speechtotext(5)
+                    yn = yn.lower()
+                    if yn == 'correct':
+                        break
+                emailid = emailid.strip()
+                emailid = emailid.replace(' ', '')
+                emailid = emailid.lower()
+                emailid = convert_special_char(emailid)
+                search_specific_mail('"[Gmail]/Trash"', 'FROM', emailid, 'trash')
+
+            elif act == 'back':
+                texttospeech("You will now be redirected to the menu page.", file + i)
+                i = i + str(1)
+                conn.logout()
+                return JsonResponse({'result': 'success'})
+
+            elif act == 'logout':
+                addr = ""
+                passwrd = ""
+                texttospeech(
+                    "You have been logged out of your account and now will be redirected back to the login page.",
+                    file + i)
+                i = i + str(1)
+                return JsonResponse({'result': 'logout'})
+
+            else:
+                texttospeech("Invalid action. Please try again.", file + i)
+                i = i + str(1)
+
+            texttospeech("If you wish to do anything else in the trash folder say stay or else say no.", file + i)
+            i = i + str(1)
+            ans = speechtotext(3)
+            ans = ans.lower()
+            print(ans)
+            if ans == 'stay':
+                flag = True
+                texttospeech("Enter your desired action. Say search, back or logout. ", file + i)
+                i = i + str(1)
+        texttospeech("You will now be redirected to the menu page.", file + i)
+        i = i + str(1)
+        conn.logout()
+        return JsonResponse({'result': 'success'})
+    elif request.method == 'GET':
+        return render(request, 'homepage/trash.html')
+
+    
    
