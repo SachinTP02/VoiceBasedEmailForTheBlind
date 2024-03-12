@@ -134,6 +134,11 @@ def search_specific_mail(folder,key,value,foldername):
     else:
         read_mails(mail_list,foldername)
 
+def get_body(msg):
+    if msg.is_multipart():
+        return get_body(msg.get_payload(0))
+    else:
+        return msg.get_payload(None, True)
 
 def login_view(request):
     global i, addr, passwrd 
@@ -160,6 +165,46 @@ def login_view(request):
     detail.password = passwrd
     return render(request, 'homepage/login.html', {'detail' : detail}) 
 
+
+def options_view(request):
+    global i, addr, passwrd
+    if request.method == 'POST':
+        flag = True
+        texttospeech("You are logged into your account. What would you like to do ?", file + i)
+        i = i + str(1)
+        while(flag):
+            texttospeech("Say compose to compose an email. Say inbox for Inbox folder.Say sent for Sent folder. Say trash for Trash folder.Say logout to Logout. Do you want me to repeat?", file + i)
+            i = i + str(1)
+            say = speechtotext(10)
+            print(f"yes/no: {say}")
+            if say == 'No' or say == 'no' or say=='noo' or say=='nyo':
+                flag = False
+        texttospeech("Enter your desired action", file + i)
+        i = i + str(1)
+        act = speechtotext(10)
+        # act = act.lower()
+        print(f"Chosen action: {act}")
+        
+        if act == 'compose' or act== 'kompos' or act=='kampos' or act == 'kampoj':
+            return JsonResponse({'result' : 'compose'})
+        elif act == 'inbox' :
+            return JsonResponse({'result' : 'inbox'})
+        elif act == 'sent' or act=='send'  or act == 'shoot':
+            return JsonResponse({'result' : 'sent'})
+        elif act == 'trash':
+            return JsonResponse({'result' : 'trash'})
+        elif act == 'logout' or act =='log out':
+            addr = ""
+            passwrd = ""
+            texttospeech("You have been logged out of your account and now will be redirected back to the login page.",file + i)
+            i = i + str(1)
+            return JsonResponse({'result': 'logout'})
+        else:
+            texttospeech("Invalid action. Please try again.", file + i)
+            i = i + str(1)
+            return JsonResponse({'result': 'failure'})
+    elif request.method == 'GET':
+        return render(request, 'homepage/options.html')
 
 
 
